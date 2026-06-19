@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宝安中学气象社 BAMC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        body {
+            /* 页面全局背景 */
+            background-image: url("bg.jpg");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            background-color: rgba(255,255,255,0.75);
+            background-blend-mode: lighten;
+
+            color: #000;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        /* ========== 头部栏样式 ========== */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #ffffff;
+            margin-bottom: 30px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 16px;
+        }
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+        }
+        .title-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0044cc;
+        }
+        /* 顶部两个弹窗触发按钮通用样式 */
+        .tip-btn {
+            padding: 10px 26px;
+            border: 2px solid #000;
+            border-radius: 9999px;
+            background: rgba(255,255,255,0.8);
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tip-btn:hover {
+            background: #e8f0ff;
+        }
+
+        /* ============================================== */
+        /* 【弹窗统一修改区】所有弹窗遮罩、盒子尺寸统一放这里 */
+        /* ============================================== */
+        /* 弹窗遮罩通用 */
+        .modal-mask {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 天气提示弹窗盒子尺寸 */
+        #tipMask .modal-box {
+            width: 50vw;
+            min-height: 40vh;
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            font-size: 22px;
+            line-height: 1.8;
+        }
+        /* 天气预报弹窗盒子尺寸（加宽85vw） */
+        #forecastMask .modal-box {
+            width: 85vw;
+            min-height: 40vh;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        /* 弹窗关闭按钮通用 */
+        .modal-close {
+            margin-top: 30px;
+            padding: 8px 24px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        /* ============================================== */
+        /* 【天气预报弹窗专属样式区】卡片、图标悬浮提示 */
+        /* ============================================== */
+        .forecast-top-bar {
+            background-color: #2277dd;
+            color: white;
+            font-size: 36px;
+            padding: 20px 30px;
+            font-weight: bold;
+        }
+        .forecast-week-wrap {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            padding: 20px;
+            background: #fff;
+        }
+        .forecast-day-card {
+            background-color: #cce0ff;
+            border-radius: 8px;
+            text-align: center;
+            padding: 20px 8px;
+            position: relative;
+        }
+        .forecast-date {
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+        /* 天气图标悬浮提示 */
+        .forecast-icon-box {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .forecast-icon {
+            font-size: 60px;
+            margin: 12px 0;
+        }
+        .forecast-tip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #222;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 16px;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        .forecast-icon-box:hover .forecast-tip {
+            visibility: visible;
+            opacity: 1;
+        }
+        .forecast-high {
+            font-size: 36px;
+            color: #ff7700;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        .forecast-low {
+            font-size: 36px;
+            color: #0055cc;
+            font-weight: bold;
+        }
+        .forecast-release {
+            padding: 0 30px 20px;
+            font-size: 22px;
+            color: #555;
+        }
+
+        /* ========== 中部实况气象数据 ========== */
+        .station-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 60px;
+        }
+        .weather-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 60px;
+            margin-bottom: 100px;
+            border: 2px solid transparent;
+            border-radius: 9999px;
+            padding: 40px 60px;
+            background-color: transparent;
+            max-width: fit-content;
+        }
+        .temp-block {
+            text-align: center;
+        }
+        .temp-num {
+            font-size: 90px;
+            font-weight: bold;
+        }
+        /* 气象文字统一楷书 */
+        .wind-info {
+            font-size: 28px;
+            margin-top: 12px;
+            font-family: "KaiTi", "楷体", serif;
+        }
+        .data-list {
+            font-size: 30px;
+            line-height: 2.2;
+        }
+        .data-list span, .data-list div {
+            font-family: "KaiTi", "楷体", serif;
+            color: #555;
+        }
+        .data-list span {
+            display: inline-block;
+            width: 140px;
+        }
+
+        /* 分割线 */
+        .divider {
+            border-bottom: 2px solid #ffffff;
+            margin: 20px 0;
+        }
+
+        /* ========== 底部其它网站导航区 ========== */
+        .func-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 24px;
+            color: #0044cc;
+        }
+        .func-links {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+        }
+        .func-item a {
+            display: block;
+            text-align: center;
+            font-weight: bold;
+            padding: 16px 8px;
+            border: 0.5px solid #f7e086;
+            border-radius: 9999px;
+            text-decoration: none;
+            color: #000;
+            transition: 0.2s;
+            background-color: rgba(255,255,255,0.8);
+        }
+        /* 长名称按钮缩小字号适配 */
+        .func-item:first-child a {
+            font-size: 18px;
+        }
+        .func-item:not(:first-child) a {
+            font-size: 20px;
+        }
+        .func-item a:hover {
+            background: #f0f4f9;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部按钮栏 -->
+    <div class="header">
+        <div class="header-left">
+            <img class="logo" src="logo.png" alt="宝安中学气象社logo">
+            <div class="title-text">宝安中学气象社 BAMC</div>
+        </div>
+        <div class="header-buttons">
+            <div class="tip-btn" id="openForecast">天气预报</div>
+            <div class="tip-btn" id="openTip">天气提示</div>
+        </div>
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- 【弹窗文本编辑集中区】所有弹窗内部文字全部放这里，方便修改 -->
+    <!-- ====================================================== -->
+    <!-- 弹窗1：天气提示弹窗（可修改中间文字） -->
+    <div class="modal-mask" id="tipMask">
+        <div class="modal-box">
+            这里填写你的天气提示文本内容，可自由修改这段文字。
+            <br><br>
+            弹窗宽度占据页面50%，整体页面居中，点击下方按钮或空白区域可关闭。
+            <br>
+            <button class="modal-close" id="closeTip">关闭提示</button>
+        </div>
+    </div>
+
+    <!-- 弹窗2：天气预报弹窗（所有预报文字统一在此修改） -->
+    <div class="modal-mask" id="forecastMask">
+        <div class="modal-box">
+            <!-- 顶部标题 已改为深圳市7天天气预报 -->
+            <div class="forecast-top-bar">深圳市7天天气预报</div>
+            <!-- 7天预报卡片文字区域 -->
+            <div class="forecast-week-wrap">
+                <div class="forecast-day-card">
+                    <div class="forecast-date">6月9日</div>
+                    <div class="forecast-icon-box">
+                        <div class="forecast-icon">⛈️</div>
+                        <div class="forecast-tip">雷阵雨</div>
+                    </div>
+                    <div class="forecast-high">29℃</div>
+                    <div class="forecast-low">25℃</div>
+                </div>
+                <div class="forecast-day-card">
+                    <div class="forecast-date">6月10日</div>
+                    <div class="forecast-icon-box">
+                        <div class="forecast-icon">⛅</div>
+                        <div class="forecast-tip">多云</div>
+                    </div>
+                    <div class="forecast-high">28℃</div>
+                    <div class="forecast-low">24℃</div>
+                </div>
+                <div class="forecast-day-card">
+                    <div class="forecast-date">6月11日</div>
+                    <div class="forecast-icon-box">
+                        <div class="forecast-icon">🌧️</div>
+                        <div class="forecast-tip">小雨</div>
+                    </div>
+                    <div class="forecast-high">29℃</div>
+                    <div class="forecast-low">25℃</div>
+                </div>
+                <div class="forecast-day-card">
+                    <div class="forecast-date">6月12日</div>
+                    <div class="forecast-icon-box">
+                        <div class="forecast-icon">🌧️</div>
+                        <div class="forecast-tip">小雨</div>
+                    </div>
+                    <div class="forecast-high">30℃</div>
+                    <div class="forecast-low">26℃</div>
+                </div>
+                <div class="forecast-day-card">
+                    <div class="forecast-date">6月13日</div>
+                    <div class="forecast-icon-box">
+                        <div class="forecast-icon">⛈️</div>
+                        <div class="forecast-tip">雷阵雨</div>
+                    </div>
+                    <div class="forecast-high">31℃</div>
+                    <div class="forecast-low">26℃</div>
+                </div>
+                <div class="forecast-day-card">
+                    <div class="forecast-date">6月14日</div>
+                    <div class="forecast-icon-box">
+                        <div class="forecast-icon">⛈️</div>
+                        <div class="forecast-tip">雷阵雨</div>
+                    </div>
+                    <div class="forecast-high">31℃</div>
+                    <div class="forecast-low">26℃</div>
+                </div>
+                <div class="forecast-day-card">
+                    <div class="forecast-date">6月15日</div>
+                    <div class="forecast-icon-box">
+                        <div class="forecast-icon">⛈️</div>
+                        <div class="forecast-tip">雷阵雨</div>
+                    </div>
+                    <div class="forecast-high">29℃</div>
+                    <div class="forecast-low">26℃</div>
+                </div>
+            </div>
+            <!-- 发布时间 -->
+            <div class="forecast-release">2026-06-08 11:30 发布</div>
+            <button class="modal-close" id="closeForecast">关闭预报</button>
+        </div>
+    </div>
+
+    <!-- 中部实况标题与气象数据 -->
+    <div class="station-title">宝安中学实况</div>
+    <div class="weather-container">
+        <div class="temp-block">
+            <div class="temp-num">25.8℃</div>
+            <div class="wind-info">东南偏东风 2 级</div>
+        </div>
+        <div class="data-list">
+            <div><span>相对湿度</span> 15 公里</div>
+            <div><span>时雨量</span> 96%</div>
+            <div><span>日雨量</span> 无降雨</div>
+        </div>
+    </div>
+
+    <!-- 分割线 -->
+    <div class="divider"></div>
+
+    <!-- 底部网站导航 -->
+    <div class="func-title">其它网站</div>
+    <div class="func-links">
+        <div class="func-item">
+            <a href="#">台风风险指数（开发中）</a>
+        </div>
+        <div class="func-item">
+            <a href="https://www.nmc.cn">中央气象台</a>
+        </div>
+        <div class="func-item">
+            <a href="https://www.smca.fun">菜园子的气象栈</a>
+        </div>
+        <div class="func-item">
+            <a href="https://weather.sz.gov.cn">深圳市气象局（台）</a>
+        </div>
+        <div class="func-item">
+            <a href="https://weibo.com/u/8013139496">气象社微博</a>
+        </div>
+    </div>
+
+<script>
+    // ========== 弹窗交互JS（弹窗开关逻辑集中在此修改） ==========
+    // 天气提示弹窗
+    const openTip = document.getElementById('openTip');
+    const tipMask = document.getElementById('tipMask');
+    const closeTip = document.getElementById('closeTip');
+    openTip.onclick = () => tipMask.style.display = 'flex';
+    closeTip.onclick = () => tipMask.style.display = 'none';
+    tipMask.onclick = (e) => { if(e.target === tipMask) tipMask.style.display = 'none' };
+
+    // 天气预报弹窗
+    const openForecast = document.getElementById('openForecast');
+    const forecastMask = document.getElementById('forecastMask');
+    const closeForecast = document.getElementById('closeForecast');
+    openForecast.onclick = () => forecastMask.style.display = 'flex';
+    closeForecast.onclick = () => forecastMask.style.display = 'none';
+    forecastMask.onclick = (e) => { if(e.target === forecastMask) forecastMask.style.display = 'none' };
+</script>
+</body>
+</html>
